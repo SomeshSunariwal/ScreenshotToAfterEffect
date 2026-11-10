@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Screenshot2AE</title>
+  <link rel="stylesheet" href="styles/panel.css">
+  <script defer src="lib/boxes.js"></script>
+  <script defer src="lib/media.js"></script>
+  <script defer src="bridge/after-effects.js"></script>
+  <script defer src="preview.js"></script>
+  <script defer src="theme.js"></script>
+  <script defer src="dropdown.js"></script>
+  <script defer src="controller.js"></script>
+</head>
+<body>
+  <main class="panel">
+    <header class="flex min-w-0 items-center gap-2 whitespace-nowrap" id="source">
+      <div class="brand flex items-center gap-[5px]" title="Screenshot2AE">
+        <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M5 11V5h6m10 0h6v6m0 10v6h-6m-10 0H5v-6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 11h12v4H10zm0 7h12v4H10z" fill="currentColor"/>
+        </svg>
+        <h1>Screenshot2AE</h1>
+      </div>
+      <div class="flex min-w-0 flex-wrap items-center gap-[5px]">
+        <input id="file" type="file" hidden>
+        <button id="upload" type="button" aria-label="Upload image" title="Upload image">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2m-3 3 3-3 3 3M3 9v4h10V9"/></svg>
+          <span>Upload</span>
+        </button>
+        <button id="image-area" type="button" aria-pressed="false" aria-controls="preview" title="Toggle image area selection" disabled>Image Area</button>
+        <button id="capture" type="button" title="Load the selected image layer from the composition timeline">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3H3v2m8-2h2v2m0 6v2h-2m-6 0H3v-2m3-4 4 1-4 2z"/></svg>
+          Use Selected Image
+        </button>
+        <select id="box-color" aria-label="Bounding box color" title="Bounding box color">
+          <option value="#ffffff">White</option>
+          <option value="#ff4040">Red</option>
+          <option value="#427bff">Blue</option>
+          <option value="#00ffff">Cyan</option>
+        </select>
+      </div>
+      <div class="relative ml-auto flex shrink-0 self-start gap-[5px]">
+        <button id="help-toggle" type="button" class="size-[26px] p-0 text-muted" aria-label="Panel controls" aria-expanded="false" aria-controls="panel-help" title="Panel controls">
+          <svg class="size-[16px]" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.75"/>
+            <path d="M8 7.6v3.1M8 5.3h.01"/>
+          </svg>
+        </button>
+        <button id="theme" type="button" class="size-[26px] p-0 text-muted" aria-label="Dark theme" aria-pressed="true" title="Switch to light theme">
+          <svg class="size-[16px]" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.25"/>
+            <path d="M8 2.25a5.75 5.75 0 0 1 0 11.5z" fill="currentColor"/>
+          </svg>
+        </button>
+        <aside id="panel-help" class="panel-help" aria-labelledby="panel-help-title" hidden>
+          <h2 id="panel-help-title">Panel controls</h2>
+          <dl>
+            <dt>Zoom in</dt><dd><kbd>Ctrl</kbd> + scroll up</dd>
+            <dt>Zoom out</dt><dd><kbd>Ctrl</kbd> + scroll down</dd>
+            <dt>Pan</dt><dd>Drag with the middle mouse button.</dd>
+            <dt>Select boxes</dt><dd>Drag across boxes with Image Area off.</dd>
+            <dt>Lock</dt><dd>Right-click a box or selection and choose Lock.</dd>
+            <dt>Delete</dt><dd>Press <kbd>Delete</kbd> on selected boxes or use the right-click menu.</dd>
+            <dt>Crop</dt><dd>Turn on Image Area and drag over the image.</dd>
+            <dt>From comp</dt><dd>Select one still-image layer, then click Use Selected Image.</dd>
+          </dl>
+        </aside>
+      </div>
+    </header>
+
+    <section class="sliders" aria-label="Detection settings">
+      <div class="slider limit">
+        <label for="count-slider">Box limit</label>
+        <input id="count-slider" type="range" min="1" max="99" value="24" disabled>
+        <input id="count" type="number" min="1" max="100" step="1" value="24" aria-label="Box limit number" title="Enter a box limit from 1 to 100" required disabled>
+      </div>
+      <label class="slider" for="padding">
+        <span>Padding</span>
+        <input id="padding" type="range" min="0" max="48" value="0" disabled>
+        <output id="padding-value" for="padding">0 px</output>
+      </label>
+    </section>
+
+    <section class="preview grid min-w-0 rounded-md border border-solid border-line bg-well" id="drop" aria-label="Image preview">
+      <div class="preview-bar">
+        <span id="source-info">Preview</span>
+        <span id="source-size" hidden></span>
+        <span id="box-total" class="box-total" hidden></span>
+        <button id="reset-region" class="text-button" type="button" title="Clear the crop and use the full image" hidden>Full image</button>
+        <button id="fit-view" class="text-button" type="button" aria-label="Fit image to viewport" title="Fit view. Ctrl+wheel to zoom, middle-drag to pan." hidden>Fit</button>
+        <button id="reset-boxes" class="text-button" type="button" aria-label="Reset Boxes" title="Restore automatic boxes for this image area" hidden disabled>Reset<span> Boxes</span></button>
+      </div>
+      <div class="viewport relative grid place-items-center overflow-hidden" id="viewport">
+        <div id="empty" class="px-3 py-2 text-center">
+          <svg viewBox="0 0 114 78" fill="none" aria-hidden="true">
+            <rect x="9" y="8" width="96" height="62" rx="5" stroke="var(--outline)" stroke-dasharray="4 4"/>
+            <rect x="24" y="21" width="43" height="12" rx="2" fill="var(--accent-wash)" stroke="currentColor"/>
+            <rect x="24" y="40" width="43" height="16" rx="2" fill="var(--accent-wash)" stroke="currentColor"/>
+            <rect x="74" y="21" width="16" height="35" rx="2" fill="var(--accent-wash)" stroke="currentColor"/>
+            <path d="M29 27h13m-13 19h23m-23 4h15m37-24h3m-3 6h3" stroke="currentColor" stroke-linecap="round"/>
+          </svg>
+          <p>Drop an image here</p>
+        </div>
+        <canvas id="preview" tabindex="0" aria-label="Drag to select boxes. Right-click to add, lock, or delete boxes. Hover an unlocked box to show its move and resize handles. Turn on Image Area to crop. Ctrl plus wheel zooms. Middle-drag pans. Enter cycles boxes. Arrow keys move a selected box. Shift with arrow keys resizes it." hidden></canvas>
+        <div id="box-menu" class="box-menu" role="group" aria-label="Box actions" hidden>
+          <button id="box-lock" type="button">Lock</button>
+          <button id="box-action" type="button"></button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label="Create layers">
+      <label class="check" title="Animate the generated image layers"><input id="animate" type="checkbox"> Animate</label>
+      <label class="animation-field" title="Animation duration per image layer">
+        Duration
+        <input id="animation-duration" type="number" min="0" step="any" value="0.2" inputmode="decimal" aria-label="Duration in seconds" required disabled>
+        <span aria-hidden="true">s</span>
+      </label>
+      <label class="animation-field" title="Delay between consecutive layer starts">
+        Stagger
+        <input id="animation-stagger" type="number" min="0" step="any" value="0.05" inputmode="decimal" aria-label="Stagger in seconds" required disabled>
+        <span aria-hidden="true">s</span>
+      </label>
+      <select id="animation-style" aria-label="Animation style" title="Animation style" disabled>
+        <option value="up">Slide up</option>
+        <option value="down">Slide down</option>
+        <option value="left">Slide left</option>
+        <option value="right">Slide right</option>
+      </select>
+      <select id="animation-effect" aria-label="Animation effect" title="Animation effect" disabled>
+        <option value="bounce">Bounce</option>
+        <option value="elastic">Elastic</option>
+      </select>
+      <button class="primary ml-auto whitespace-nowrap" id="create" type="button" disabled>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m2 5 6-3 6 3-6 3zm0 3 6 3 6-3M2 11l6 3 6-3"/></svg>
+        Create Layers
+      </button>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </footer>
+  </main>
+</body>
+</html>

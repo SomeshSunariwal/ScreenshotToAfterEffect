@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.screenshot2ae" ExtensionBundleVersion="1.4.10" ExtensionBundleName="Screenshot2AE">
+  <ExtensionList>
+    <Extension Id="com.screenshot2ae.panel" Version="1.4.10"/>
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList><Host Name="AEFT" Version="[18.0,99.9]"/></HostList>
+    <LocaleList><Locale Code="All"/></LocaleList>
+    <RequiredRuntimeList><RequiredRuntime Name="CSXS" Version="11.0"/></RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.screenshot2ae.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./panel/index.html</MainPath>
+          <ScriptPath>./host/host.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Screenshot2AE</Menu>
+          <Geometry>
+            <Size><Width>650</Width><Height>680</Height></Size>
+            <MinSize><Width>290</Width><Height>350</Height></MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>
