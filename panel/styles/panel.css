@@ -278,19 +278,23 @@ input {
   font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
 }
 
-#reset-boxes {
+#clear-canvas, #reset-boxes {
   flex-shrink: 0;
   gap: 3px;
 }
 
-#reset-boxes, .box-menu [data-destructive] {
+#box-total[hidden] ~ #clear-canvas {
+  margin-left: auto;
+}
+
+#clear-canvas, #reset-boxes, .box-menu [data-destructive] {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
   background: #a52734;
   border-color: #a52734;
 }
 
-#reset-boxes:hover:not(:disabled), .box-menu [data-destructive]:hover {
+#clear-canvas:hover:not(:disabled), #reset-boxes:hover:not(:disabled), .box-menu [data-destructive]:hover {
   background: #85222d;
   border-color: #85222d;
 }
@@ -672,7 +676,7 @@ canvas:focus-visible {
     display: none;
   }
 
-  #reset-boxes span {
+  #clear-canvas span, #reset-boxes span {
     display: none;
   }
 }

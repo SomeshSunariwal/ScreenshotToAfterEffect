@@ -136,7 +136,13 @@ const ScreenshotBoxes = (() => {
       t: Math.max(Math.round(bounds.t * scaleY), Math.round(content.t * scaleY) - padding),
       r: Math.min(Math.round(bounds.r * scaleX), Math.round(content.r * scaleX) + padding),
       b: Math.min(Math.round(bounds.b * scaleY), Math.round(content.b * scaleY) + padding)
-    })).sort(byPosition);
+    }));
+  }
+
+  function suggestPadding(boxes, scaleX, scaleY, maximum) {
+    const sizes = boxes.map(({ l, t, r, b }) => Math.min(r - l, b - t)).sort((a, b) => a - b);
+    const typicalSize = sizes[Math.floor(sizes.length / 2)] ?? 0;
+    return Math.round(Math.min(maximum, typicalSize / 16, 4 * Math.min(scaleX, scaleY)));
   }
 
   function byPosition(a, b) {
@@ -145,6 +151,58 @@ const ScreenshotBoxes = (() => {
 
   function overlaps(a, b) {
     return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+  }
+
+  function enclosure(a, b) {
+    return { l: Math.min(a.l, b.l), t: Math.min(a.t, b.t), r: Math.max(a.r, b.r), b: Math.max(a.b, b.b) };
+  }
+
+  function findMerge(groups, limit, protectedAreas, includeOverlaps) {
+    const area = box => (box.r - box.l) * (box.b - box.t);
+    let best;
+    for (let i = 0; i < groups.length - 1; i++) {
+      for (let j = i + 1; j < groups.length; j++) {
+        let box = enclosure(groups[i], groups[j]);
+        if (protectedAreas.some(other => overlaps(box, other))) continue;
+        const members = [i, j];
+        if (includeOverlaps) {
+          // If every pair crosses another box, include the boxes it crosses.
+          for (let index = 0; index < groups.length; index++) {
+            if (members.includes(index) || !overlaps(box, groups[index])) continue;
+            box = enclosure(box, groups[index]);
+            members.push(index);
+            index = -1;
+          }
+          if (protectedAreas.some(other => overlaps(box, other))) continue;
+        } else if (groups.some((other, index) => index !== i && index !== j && overlaps(box, other))) {
+          continue;
+        }
+        const reduction = members.length - 1;
+        const overshoot = Math.max(0, limit - (groups.length - reduction));
+        const cost = (area(box) - members.reduce((sum, index) => sum + area(groups[index]), 0)) / reduction;
+        if (!best || overshoot < best.overshoot || (overshoot === best.overshoot && cost < best.cost)) {
+          best = { members, box, cost, overshoot };
+        }
+      }
+    }
+    return best;
+  }
+
+  function mergeToLimit(boxes, limit, protectedAreas) {
+    if (limit === 0) return [];
+    if (boxes.length <= limit) return boxes;
+    const groups = [...boxes];
+    while (groups.length > limit) {
+      const best = findMerge(groups, limit, protectedAreas, false)
+        || findMerge(groups, limit, protectedAreas, true);
+      if (!best) break;
+      const { members, box } = best;
+      const [first, ...rest] = members.sort((a, b) => a - b);
+      groups[first] = { ...box, id: `merge:${box.l}:${box.t}:${box.r}:${box.b}` };
+      for (const index of rest.reverse()) groups.splice(index, 1);
+    }
+    // A protected region can separate groups that cannot share one rectangle.
+    return groups.slice(0, limit);
   }
 
   function roomForBox({ x, y }, bounds, boxes) {
@@ -238,5 +296,5 @@ const ScreenshotBoxes = (() => {
     }
   }
 
-  return { splitBoxes, scaleBoxes, byPosition, overlaps, roomForBox, moveBox, resizeBox, fillBox };
+  return { splitBoxes, scaleBoxes, suggestPadding, byPosition, overlaps, mergeToLimit, roomForBox, moveBox, resizeBox, fillBox };
 })();

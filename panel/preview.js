@@ -1,7 +1,7 @@
 "use strict";
 
 function createPreview(viewport, element, {
-  enabled, canSelectRegion, selectRegion, selectBoxes, adjustBox, showZoom, boxColor,
+  enabled, canSelectRegion, selectRegion, selectBoxes, adjustBox, finishBoxDrag, showZoom, boxColor,
   actionMenu, lockButton, actionButton, addBoxAt, toggleBoxLocks, deleteBoxes
 }) {
   const state = { source: null, region: null, boxes: [], selected: new Set(), locked: new Map(), drag: null };
@@ -294,10 +294,10 @@ function createPreview(viewport, element, {
       const dx = drag.end.x - drag.start.x;
       const dy = drag.end.y - drag.start.y;
       if (kind === "move") {
-        adjustBox(box.id, kind, box.l + dx, box.t + dy);
+        adjustBox(box.id, kind, box.l + dx, box.t + dy, true);
       } else {
         const sign = kind === "resize-top-left" ? -1 : 1;
-        adjustBox(box.id, kind, box.r - box.l + sign * dx, box.b - box.t + sign * dy);
+        adjustBox(box.id, kind, box.r - box.l + sign * dx, box.b - box.t + sign * dy, true);
       }
     }
   }
@@ -330,6 +330,7 @@ function createPreview(viewport, element, {
     const { moved, handle, area, end } = state.drag;
     const region = !handle && moved ? dragRect() : null;
     state.drag = null;
+    if (handle) finishBoxDrag();
     if (area && region && region.r - region.l >= 4 && region.b - region.t >= 4) {
       selectRegion(region);
     } else if (!area && region) {
@@ -351,7 +352,7 @@ function createPreview(viewport, element, {
   });
 
   element.addEventListener("keydown", event => {
-    if (!enabled() || !state.boxes.length || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (!enabled() || state.drag?.handle || !state.boxes.length || event.ctrlKey || event.altKey || event.metaKey) return;
     if (event.key === "Delete" && state.selected.size) {
       event.preventDefault();
       deleteBoxes(state.selected);
@@ -374,6 +375,7 @@ function createPreview(viewport, element, {
   function cancelSelection() {
     closeBoxMenu();
     if (!state.drag && !pan) return;
+    if (state.drag?.handle) finishBoxDrag();
     state.drag = null;
     pan = null;
     hovered = "";
@@ -382,6 +384,7 @@ function createPreview(viewport, element, {
   }
 
   element.addEventListener("lostpointercapture", cancelSelection);
+  element.addEventListener("pointercancel", cancelSelection);
 
   return {
     update(source, region, boxes, selected, locked) {
@@ -391,6 +394,12 @@ function createPreview(viewport, element, {
         hovered = "";
       }
       Object.assign(state, { source, region, boxes, selected, locked });
+      if (!source) {
+        view = undefined;
+        element.width = element.height = 0;
+        element.style.cursor = "default";
+        return;
+      }
       drawPreview();
     },
     fit() {

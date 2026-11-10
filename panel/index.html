@@ -6,6 +6,7 @@
   <title>Screenshot2AE</title>
   <link rel="stylesheet" href="styles/panel.css">
   <script defer src="lib/boxes.js"></script>
+  <script defer src="lib/elements.js"></script>
   <script defer src="lib/media.js"></script>
   <script defer src="bridge/after-effects.js"></script>
   <script defer src="preview.js"></script>
@@ -63,6 +64,8 @@
             <dt>Select boxes</dt><dd>Drag across boxes with Image Area off.</dd>
             <dt>Lock</dt><dd>Right-click a box or selection and choose Lock.</dd>
             <dt>Delete</dt><dd>Press <kbd>Delete</kbd> on selected boxes or use the right-click menu.</dd>
+            <dt>Undo box action</dt><dd><kbd>Ctrl</kbd> + <kbd>Z</kbd></dd>
+            <dt>Redo box action</dt><dd><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dd>
             <dt>Crop</dt><dd>Turn on Image Area and drag over the image.</dd>
             <dt>From comp</dt><dd>Select one still-image layer, then click Use Selected Image.</dd>
           </dl>
@@ -81,6 +84,7 @@
         <input id="padding" type="range" min="0" max="48" value="0" disabled>
         <output id="padding-value" for="padding">0 px</output>
       </label>
+      <button id="auto-fit" class="shrink-0" type="button" title="Set box limit and padding from detected elements" disabled>Auto</button>
     </section>
 
     <section class="preview grid min-w-0 rounded-md border border-solid border-line bg-well" id="drop" aria-label="Image preview">
@@ -90,6 +94,7 @@
         <span id="box-total" class="box-total" hidden></span>
         <button id="reset-region" class="text-button" type="button" title="Clear the crop and use the full image" hidden>Full image</button>
         <button id="fit-view" class="text-button" type="button" aria-label="Fit image to viewport" title="Fit view. Ctrl+wheel to zoom, middle-drag to pan." hidden>Fit</button>
+        <button id="clear-canvas" class="text-button" type="button" aria-label="Clear Canvas" title="Remove the image from the preview" disabled>Clear<span> Canvas</span></button>
         <button id="reset-boxes" class="text-button" type="button" aria-label="Reset Boxes" title="Restore automatic boxes for this image area" hidden disabled>Reset<span> Boxes</span></button>
       </div>
       <div class="viewport relative grid place-items-center overflow-hidden" id="viewport">
@@ -128,10 +133,16 @@
         <option value="down">Slide down</option>
         <option value="left">Slide left</option>
         <option value="right">Slide right</option>
+        <option value="pop">Pop in</option>
+        <option value="fade-up">Fade up</option>
+        <option value="fade-down">Fade down</option>
+        <option value="fade-left">Fade left</option>
+        <option value="fade-right">Fade right</option>
       </select>
       <select id="animation-effect" aria-label="Animation effect" title="Animation effect" disabled>
-        <option value="bounce">Bounce</option>
+        <option value="none" selected>None</option>
         <option value="elastic">Elastic</option>
+        <option value="bounce">Bounce</option>
       </select>
       <button class="primary ml-auto whitespace-nowrap" id="create" type="button" disabled>
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m2 5 6-3 6 3-6 3zm0 3 6 3 6-3M2 11l6 3 6-3"/></svg>

@@ -69,9 +69,9 @@ var Screenshot2AE = (function () {
     }
 
     // Adapted from Denys Bondartsov's damped oscillation at Motion Design School.
-    // The incoming speed at the second Position key drives the one-second settle.
+    // The incoming speed at the second key drives the one-second settle.
     var motionExpression = [
-        "function settleSlide() {",
+        "function settleMotion() {",
         "    if (thisProperty.numKeys < 2) return value;",
         "    var reached = thisProperty.nearestKey(time).index;",
         "    if (thisProperty.key(reached).time > time) reached--;",
@@ -81,12 +81,13 @@ var Screenshot2AE = (function () {
         "    var elapsed = time - arrival.time;",
         "    if (elapsed <= 0 || elapsed >= 1) return value;",
         "    var rig = thisComp.layer('Controller');",
+        "    var mode = rig.effect('Motion')(1).value;",
+        "    if (mode === 1) return value;",
         "    var amplitude = Math.max(0, rig.effect('Amplitude')(1).value);",
         "    var frequency = Math.max(0, rig.effect('Frequency')(1).value);",
         "    var decay = Math.max(0, rig.effect('Decay')(1).value);",
-        "    var elastic = rig.effect('Motion')(1).value === 2;",
         "    var wave = Math.sin(frequency * elapsed * 2 * Math.PI);",
-        "    if (!elastic) wave = -Math.abs(wave);",
+        "    if (mode === 3) wave = -Math.abs(wave);",
         "    var weight = amplitude * wave / Math.exp(decay * elapsed);",
         "    var travelTime = arrival.time - start.time;",
         "    var probe = Math.min(thisComp.frameDuration / 10, travelTime / 2);",
@@ -96,7 +97,7 @@ var Screenshot2AE = (function () {
         "    }",
         "    return add(value, mul(incomingVelocity, weight));",
         "}",
-        "settleSlide();"
+        "settleMotion();"
     ].join("\n");
 
     function addMotionController(comp, duration, effect) {
@@ -106,8 +107,8 @@ var Screenshot2AE = (function () {
 
         var menuEffect = controller.property("ADBE Effect Parade").addProperty("ADBE Dropdown Control");
         var menuIndex = menuEffect.propertyIndex;
-        var menu = menuEffect.property(1).setPropertyParameters(["Bounce", "Elastic"]);
-        menu.setValue(effect === "elastic" ? 2 : 1);
+        var menu = menuEffect.property(1).setPropertyParameters(["None", "Elastic", "Bounce"]);
+        menu.setValue(effect === "elastic" ? 2 : effect === "bounce" ? 3 : 1);
         controller.property("ADBE Effect Parade").property(menuIndex).name = "Motion";
 
         function addSlider(name, value) {
@@ -123,18 +124,26 @@ var Screenshot2AE = (function () {
 
     function buildMotion(settings, width, height, fps) {
         var directions = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] };
-        var direction = directions[settings.style];
+        var style = settings.style;
+        var pop = style === "pop";
+        var fade = typeof style === "string" && style.indexOf("fade-") === 0;
+        var directionName = fade ? style.substring(5) : style;
+        if ((!pop && !directions.hasOwnProperty(directionName))
+            || (settings.effect !== "none" && settings.effect !== "elastic" && settings.effect !== "bounce")) {
+            throw new Error("Choose a valid animation style and effect.");
+        }
+        var direction = pop ? [0, 0] : directions[directionName];
         var duration = settings.duration;
         var stagger = settings.stagger;
-        if (!direction || (settings.effect !== "bounce" && settings.effect !== "elastic")
-            || typeof duration !== "number" || typeof stagger !== "number"
+        if (typeof duration !== "number" || typeof stagger !== "number"
             || !isFinite(duration) || !isFinite(stagger) || duration < 0 || stagger < 0) {
             throw new Error("Enter a duration and stagger of 0 seconds or more.");
         }
         var frames = duration === 0 ? 0 : Math.max(1, Math.round(duration * fps));
         var axisSize = direction[0] ? width : height;
-        var distance = Math.max(12, Math.min(120, Math.round(axisSize * 0.08)));
-        return { frames: frames, staggerFrames: stagger * fps, x: direction[0] * distance, y: direction[1] * distance };
+        var distance = fade ? Math.max(6, Math.min(32, Math.round(axisSize * 0.035)))
+            : Math.max(12, Math.min(120, Math.round(axisSize * 0.08)));
+        return { frames: frames, staggerFrames: stagger * fps, pop: pop, x: direction[0] * distance, y: direction[1] * distance };
     }
 
     function applyMotion(layer, motion, index, fps) {
@@ -142,19 +151,21 @@ var Screenshot2AE = (function () {
         layer.inPoint = start / fps;
         if (motion.frames === 0) return;
         var transform = layer.property("ADBE Transform Group");
-        var position = transform.property("ADBE Position");
-        var rest = position.value;
+        var movement = transform.property(motion.pop ? "ADBE Scale" : "ADBE Position");
+        var rest = movement.value;
+        var entrance = motion.pop ? [rest[0] * 0.7, rest[1] * 0.7] : [rest[0] + motion.x, rest[1] + motion.y];
         var end = (start + motion.frames) / fps;
         var times = [start / fps, end];
-        position.setValuesAtTimes(times, [[rest[0] + motion.x, rest[1] + motion.y], rest]);
+        movement.setValuesAtTimes(times, [entrance, rest]);
         var linear = KeyframeInterpolationType.LINEAR;
         var bezier = KeyframeInterpolationType.BEZIER;
         var easeOut = new KeyframeEase(0, 33.33);
-        position.setInterpolationTypeAtKey(1, linear, bezier);
-        position.setTemporalEaseAtKey(1, [easeOut], [easeOut]);
-        position.setInterpolationTypeAtKey(2, linear, linear);
-        position.expression = motionExpression;
-        if (position.expressionError) throw new Error(position.expressionError);
+        var ease = motion.pop ? [easeOut, easeOut] : [easeOut];
+        movement.setInterpolationTypeAtKey(1, linear, bezier);
+        movement.setTemporalEaseAtKey(1, ease, ease);
+        movement.setInterpolationTypeAtKey(2, linear, linear);
+        movement.expression = motionExpression;
+        if (movement.expressionError) throw new Error(movement.expressionError);
         var opacity = transform.property("ADBE Opacity");
         opacity.setValuesAtTimes(times, [0, 100]);
         opacity.setInterpolationTypeAtKey(1, linear, linear);
