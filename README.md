@@ -16,7 +16,7 @@ Screenshot2AE is an Adobe After Effects extension that turns a screenshot or sti
 2. **Navigate the preview.** Hold **Ctrl** and scroll to zoom. Drag with the middle mouse button to pan. Click **Fit** to return to the full view.
 3. **Choose what to cut.** By default, the panel uses the full image. Turn on **Image Area** and drag over a section to work on it. Click **Full image** to clear the crop. Use **Box limit** to change the maximum number of boxes, **Padding** to adjust the space around each box, and the color menu to change the outlines. The slider goes up to 99, and you can enter 100 in the number field.
 4. **Refine the boxes.** Hover over a box and drag its center to move it or either visible corner handle to resize it. Right-click a box to lock, unlock, or delete it. Right-click an uncovered part of the image to add a box there. With **Image Area** off, drag across several boxes to select them together. Box edits, locks, and deletions are kept when you change the box limit or padding. Click **Reset Boxes** beside **Fit** to restore automatic boxes for the current area.
-5. **Create the layers.** Click **Create Layers** to generate a new composition with the cutouts ordered from top to bottom and a separate background layer. To animate the cutouts, enable **Animate** and choose the direction and effect. The defaults are **0.2 s** duration, **0.05 s** stagger, **Slide up**, and **Bounce**. Adjust the motion for all cutouts from the **Controller** layer in the generated composition.
+5. **Create the layers.** Click **Create Layers** to generate a new composition with the cutouts ordered from top to bottom and a separate background layer. To animate the cutouts, enable **Animate** and choose a slide, directional fade, or **Pop in**. The defaults are **0.2 s** duration, **0.05 s** stagger, **Slide up**, and **None**. Switch the motion effect to **Elastic** or **Bounce** from the panel or from the **Controller** layer in the generated composition.
 
 Click the **info** icon beside the theme toggle to see the controls inside the panel. Keep the **Screenshot2AE Assets** folder in **Documents** with your project media so After Effects can find the exported layers.
 
@@ -29,4 +29,4 @@ Click the **info** icon beside the theme toggle to see the controls inside the p
 
 ## License Info
 
-Check License File
+Screenshot2AE’s license is unspecified. Contact the maintainer for licensing and redistribution terms.

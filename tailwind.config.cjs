@@ -9,8 +9,8 @@ module.exports = {
         well: "var(--well)",
         line: "var(--line)",
         ink: "var(--text)",
-        muted: "var(--muted)"
-      }
-    }
-  }
+        muted: "var(--muted)",
+      },
+    },
+  },
 };

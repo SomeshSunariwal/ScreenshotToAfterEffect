@@ -46,7 +46,9 @@ function createDropdown(select) {
     trigger.disabled = select.disabled;
     trigger.textContent = select.options[index].text;
     trigger.setAttribute("aria-label", `${label}: ${trigger.textContent}`);
-    options.forEach((option, i) => option.setAttribute("aria-selected", String(i === index)));
+    options.forEach((option, i) =>
+      option.setAttribute("aria-selected", String(i === index)),
+    );
     if (select.disabled) close();
   }
 
@@ -55,22 +57,28 @@ function createDropdown(select) {
     const bounds = trigger.getBoundingClientRect();
     menu.style.minWidth = `${bounds.width}px`;
     menu.hidden = false;
-    const left = Math.max(4, Math.min(bounds.left, window.innerWidth - menu.offsetWidth - 4));
+    const left = Math.max(
+      4,
+      Math.min(bounds.left, window.innerWidth - menu.offsetWidth - 4),
+    );
     const below = bounds.bottom + 4;
-    const top = below + menu.offsetHeight <= window.innerHeight - 4 ? below : bounds.top - menu.offsetHeight - 4;
+    const top =
+      below + menu.offsetHeight <= window.innerHeight - 4
+        ? below
+        : bounds.top - menu.offsetHeight - 4;
     menu.style.left = `${left}px`;
     menu.style.top = `${Math.max(4, top)}px`;
     trigger.setAttribute("aria-expanded", "true");
     options[select.selectedIndex].focus({ preventScroll: true });
   }
 
-  trigger.addEventListener("click", () => menu.hidden ? open() : close(true));
-  trigger.addEventListener("keydown", event => {
+  trigger.addEventListener("click", () => (menu.hidden ? open() : close(true)));
+  trigger.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
     open();
   });
-  menu.addEventListener("keydown", event => {
+  menu.addEventListener("keydown", (event) => {
     const index = options.indexOf(document.activeElement);
     if (index >= 0 && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
@@ -82,16 +90,25 @@ function createDropdown(select) {
       close(true);
       return;
     }
-    const target = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: options.length - 1 }[event.key];
+    const target = {
+      ArrowDown: index + 1,
+      ArrowUp: index - 1,
+      Home: 0,
+      End: options.length - 1,
+    }[event.key];
     if (target === undefined) return;
     event.preventDefault();
-    options[Math.max(0, Math.min(options.length - 1, target))].focus({ preventScroll: true });
+    options[Math.max(0, Math.min(options.length - 1, target))].focus({
+      preventScroll: true,
+    });
   });
-  menu.addEventListener("focusout", event => {
-    if (event.relatedTarget !== trigger && !menu.contains(event.relatedTarget)) close();
+  menu.addEventListener("focusout", (event) => {
+    if (event.relatedTarget !== trigger && !menu.contains(event.relatedTarget))
+      close();
   });
-  document.addEventListener("pointerdown", event => {
-    if (!trigger.contains(event.target) && !menu.contains(event.target)) close();
+  document.addEventListener("pointerdown", (event) => {
+    if (!trigger.contains(event.target) && !menu.contains(event.target))
+      close();
   });
   window.addEventListener("resize", () => close());
   select.addEventListener("change", sync);
