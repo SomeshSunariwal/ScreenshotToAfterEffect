@@ -15,7 +15,9 @@
     try {
       const skin = JSON.parse(cep.getHostEnvironment()).appSkinInfo;
       const { red, green, blue } = skin.panelBackgroundColor.color;
-      return 0.2126 * red + 0.7152 * green + 0.0722 * blue >= 135 ? "light" : "dark";
+      return 0.2126 * red + 0.7152 * green + 0.0722 * blue >= 135
+        ? "light"
+        : "dark";
     } catch (error) {
       return system.matches ? "dark" : "light";
     }
@@ -25,15 +27,20 @@
     const theme = preference || hostTheme();
     document.documentElement.dataset.theme = theme;
     toggle.setAttribute("aria-pressed", String(theme === "dark"));
-    toggle.title = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
+    toggle.title =
+      theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
   }
 
   toggle.addEventListener("click", () => {
-    preference = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    try { localStorage.setItem(themeKey, preference); } catch (error) {}
+    preference =
+      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    try {
+      localStorage.setItem(themeKey, preference);
+    } catch (error) {}
     applyTheme();
   });
   system.addEventListener("change", applyTheme);
-  if (cep) cep.addEventListener("com.adobe.csxs.events.ThemeColorChanged", applyTheme);
+  if (cep)
+    cep.addEventListener("com.adobe.csxs.events.ThemeColorChanged", applyTheme);
   applyTheme();
 })();

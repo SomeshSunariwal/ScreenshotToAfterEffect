@@ -15,12 +15,15 @@ const ScreenshotBoxes = (() => {
           const b = (pixel - lineStep) * 4;
           const alpha = data[a + 3] / 255;
           const otherAlpha = data[b + 3] / 255;
-          edges[i] = Math.max(
-            Math.abs(data[a + 3] - data[b + 3]),
-            Math.abs(data[a] * alpha - data[b] * otherAlpha),
-            Math.abs(data[a + 1] * alpha - data[b + 1] * otherAlpha),
-            Math.abs(data[a + 2] * alpha - data[b + 2] * otherAlpha)
-          ) >= 24 ? 1 : 0;
+          edges[i] =
+            Math.max(
+              Math.abs(data[a + 3] - data[b + 3]),
+              Math.abs(data[a] * alpha - data[b] * otherAlpha),
+              Math.abs(data[a + 1] * alpha - data[b + 1] * otherAlpha),
+              Math.abs(data[a + 2] * alpha - data[b + 2] * otherAlpha),
+            ) >= 24
+              ? 1
+              : 0;
         }
         let start = -1;
         let last = -1;
@@ -43,8 +46,20 @@ const ScreenshotBoxes = (() => {
       }
     }
 
-    markEdges(height, width, width, 1, keepLongEdges ? width : Math.max(14, width * 0.095));
-    markEdges(width, height, 1, width, keepLongEdges ? height : Math.max(14, height * 0.16));
+    markEdges(
+      height,
+      width,
+      width,
+      1,
+      keepLongEdges ? width : Math.max(14, width * 0.095),
+    );
+    markEdges(
+      width,
+      height,
+      1,
+      width,
+      keepLongEdges ? height : Math.max(14, height * 0.16),
+    );
 
     const integral = new Uint32Array(stride * (height + 1));
     for (let y = 0; y < height; y++) {
@@ -55,8 +70,10 @@ const ScreenshotBoxes = (() => {
       }
     }
     return (l, t, r, b) =>
-      integral[b * stride + r] - integral[t * stride + r] -
-      integral[b * stride + l] + integral[t * stride + l];
+      integral[b * stride + r] -
+      integral[t * stride + r] -
+      integral[b * stride + l] +
+      integral[t * stride + l];
   }
 
   function splitBoxes(pixels, limit, { keepLongEdges = false } = {}) {
@@ -78,7 +95,9 @@ const ScreenshotBoxes = (() => {
         const start = horizontal ? t : l;
         const end = horizontal ? b : r;
         const cross = horizontal ? r - l : b - t;
-        const minimumGap = horizontal ? 4 : Math.max(9, Math.min(20, (end - start) * 0.018));
+        const minimumGap = horizontal
+          ? 4
+          : Math.max(9, Math.min(20, (end - start) * 0.018));
         const quiet = Math.floor(cross * 0.004);
         let gap = start;
         for (let i = start; i < end; i++) {
@@ -96,12 +115,15 @@ const ScreenshotBoxes = (() => {
               let shared = 0;
               let occupied = 0;
               for (let y = t; y < b; y++) {
-                const left = sum(l, y, gap, y + 1) > Math.floor((gap - l) * 0.004);
+                const left =
+                  sum(l, y, gap, y + 1) > Math.floor((gap - l) * 0.004);
                 const right = sum(i, y, r, y + 1) > Math.floor((r - i) * 0.004);
                 if (left && right) shared++;
                 if (left || right) occupied++;
               }
-              gapScore = Math.min(span, 24) * (0.45 + 2 * (1 - shared / Math.max(1, occupied)));
+              gapScore =
+                Math.min(span, 24) *
+                (0.45 + 2 * (1 - shared / Math.max(1, occupied)));
             }
             const score = gapScore * (0.5 + 0.5 * Math.sqrt(balance));
             if (a >= 8 && c >= 8 && (!split || score > split.score)) {
@@ -118,12 +140,19 @@ const ScreenshotBoxes = (() => {
     while (boxes.length < limit) {
       let next = -1;
       for (let i = 0; i < boxes.length; i++) {
-        if (boxes[i].split && (next < 0 || boxes[i].split.score > boxes[next].split.score)) next = i;
+        if (
+          boxes[i].split &&
+          (next < 0 || boxes[i].split.score > boxes[next].split.score)
+        )
+          next = i;
       }
       if (next < 0) break;
       const { bounds, split } = boxes[next];
       const first = { ...bounds, [split.horizontal ? "b" : "r"]: split.middle };
-      const second = { ...bounds, [split.horizontal ? "t" : "l"]: split.middle };
+      const second = {
+        ...bounds,
+        [split.horizontal ? "t" : "l"]: split.middle,
+      };
       boxes.splice(next, 1, makeBox(first), makeBox(second));
     }
     return boxes;
@@ -132,17 +161,33 @@ const ScreenshotBoxes = (() => {
   function scaleBoxes(boxes, scaleX, scaleY, padding) {
     return boxes.map(({ content, bounds }) => ({
       id: [bounds.l, bounds.t, bounds.r, bounds.b].join(":"),
-      l: Math.max(Math.round(bounds.l * scaleX), Math.round(content.l * scaleX) - padding),
-      t: Math.max(Math.round(bounds.t * scaleY), Math.round(content.t * scaleY) - padding),
-      r: Math.min(Math.round(bounds.r * scaleX), Math.round(content.r * scaleX) + padding),
-      b: Math.min(Math.round(bounds.b * scaleY), Math.round(content.b * scaleY) + padding)
+      l: Math.max(
+        Math.round(bounds.l * scaleX),
+        Math.round(content.l * scaleX) - padding,
+      ),
+      t: Math.max(
+        Math.round(bounds.t * scaleY),
+        Math.round(content.t * scaleY) - padding,
+      ),
+      r: Math.min(
+        Math.round(bounds.r * scaleX),
+        Math.round(content.r * scaleX) + padding,
+      ),
+      b: Math.min(
+        Math.round(bounds.b * scaleY),
+        Math.round(content.b * scaleY) + padding,
+      ),
     }));
   }
 
   function suggestPadding(boxes, scaleX, scaleY, maximum) {
-    const sizes = boxes.map(({ l, t, r, b }) => Math.min(r - l, b - t)).sort((a, b) => a - b);
+    const sizes = boxes
+      .map(({ l, t, r, b }) => Math.min(r - l, b - t))
+      .sort((a, b) => a - b);
     const typicalSize = sizes[Math.floor(sizes.length / 2)] ?? 0;
-    return Math.round(Math.min(maximum, typicalSize / 16, 4 * Math.min(scaleX, scaleY)));
+    return Math.round(
+      Math.min(maximum, typicalSize / 16, 4 * Math.min(scaleX, scaleY)),
+    );
   }
 
   function byPosition(a, b) {
@@ -154,33 +199,51 @@ const ScreenshotBoxes = (() => {
   }
 
   function enclosure(a, b) {
-    return { l: Math.min(a.l, b.l), t: Math.min(a.t, b.t), r: Math.max(a.r, b.r), b: Math.max(a.b, b.b) };
+    return {
+      l: Math.min(a.l, b.l),
+      t: Math.min(a.t, b.t),
+      r: Math.max(a.r, b.r),
+      b: Math.max(a.b, b.b),
+    };
   }
 
   function findMerge(groups, limit, protectedAreas, includeOverlaps) {
-    const area = box => (box.r - box.l) * (box.b - box.t);
+    const area = (box) => (box.r - box.l) * (box.b - box.t);
     let best;
     for (let i = 0; i < groups.length - 1; i++) {
       for (let j = i + 1; j < groups.length; j++) {
         let box = enclosure(groups[i], groups[j]);
-        if (protectedAreas.some(other => overlaps(box, other))) continue;
+        if (protectedAreas.some((other) => overlaps(box, other))) continue;
         const members = [i, j];
         if (includeOverlaps) {
           // If every pair crosses another box, include the boxes it crosses.
           for (let index = 0; index < groups.length; index++) {
-            if (members.includes(index) || !overlaps(box, groups[index])) continue;
+            if (members.includes(index) || !overlaps(box, groups[index]))
+              continue;
             box = enclosure(box, groups[index]);
             members.push(index);
             index = -1;
           }
-          if (protectedAreas.some(other => overlaps(box, other))) continue;
-        } else if (groups.some((other, index) => index !== i && index !== j && overlaps(box, other))) {
+          if (protectedAreas.some((other) => overlaps(box, other))) continue;
+        } else if (
+          groups.some(
+            (other, index) =>
+              index !== i && index !== j && overlaps(box, other),
+          )
+        ) {
           continue;
         }
         const reduction = members.length - 1;
         const overshoot = Math.max(0, limit - (groups.length - reduction));
-        const cost = (area(box) - members.reduce((sum, index) => sum + area(groups[index]), 0)) / reduction;
-        if (!best || overshoot < best.overshoot || (overshoot === best.overshoot && cost < best.cost)) {
+        const cost =
+          (area(box) -
+            members.reduce((sum, index) => sum + area(groups[index]), 0)) /
+          reduction;
+        if (
+          !best ||
+          overshoot < best.overshoot ||
+          (overshoot === best.overshoot && cost < best.cost)
+        ) {
           best = { members, box, cost, overshoot };
         }
       }
@@ -193,12 +256,16 @@ const ScreenshotBoxes = (() => {
     if (boxes.length <= limit) return boxes;
     const groups = [...boxes];
     while (groups.length > limit) {
-      const best = findMerge(groups, limit, protectedAreas, false)
-        || findMerge(groups, limit, protectedAreas, true);
+      const best =
+        findMerge(groups, limit, protectedAreas, false) ||
+        findMerge(groups, limit, protectedAreas, true);
       if (!best) break;
       const { members, box } = best;
       const [first, ...rest] = members.sort((a, b) => a - b);
-      groups[first] = { ...box, id: `merge:${box.l}:${box.t}:${box.r}:${box.b}` };
+      groups[first] = {
+        ...box,
+        id: `merge:${box.l}:${box.t}:${box.r}:${box.b}`,
+      };
       for (const index of rest.reverse()) groups.splice(index, 1);
     }
     // A protected region can separate groups that cannot share one rectangle.
@@ -207,17 +274,28 @@ const ScreenshotBoxes = (() => {
 
   function roomForBox({ x, y }, bounds, boxes) {
     let room = bounds;
-    const area = box => (box.r - box.l) * (box.b - box.t);
+    const area = (box) => (box.r - box.l) * (box.b - box.t);
     for (const box of boxes) {
       if (!overlaps(room, box)) continue;
-      const horizontal = x < box.l ? { ...room, r: box.l }
-        : x >= box.r ? { ...room, l: box.r } : null;
-      const vertical = y < box.t ? { ...room, b: box.t }
-        : y >= box.b ? { ...room, t: box.b } : null;
+      const horizontal =
+        x < box.l
+          ? { ...room, r: box.l }
+          : x >= box.r
+            ? { ...room, l: box.r }
+            : null;
+      const vertical =
+        y < box.t
+          ? { ...room, b: box.t }
+          : y >= box.b
+            ? { ...room, t: box.b }
+            : null;
       if (!horizontal && !vertical) return null;
-      room = horizontal && vertical
-        ? (area(horizontal) >= area(vertical) ? horizontal : vertical)
-        : horizontal || vertical;
+      room =
+        horizontal && vertical
+          ? area(horizontal) >= area(vertical)
+            ? horizontal
+            : vertical
+          : horizontal || vertical;
     }
     return room;
   }
@@ -233,14 +311,23 @@ const ScreenshotBoxes = (() => {
       if (other.l >= box.r) left = Math.min(left, other.l - width);
     }
     for (const other of boxes) {
-      if (other.id === box.id || other.l >= left + width || other.r <= left) continue;
+      if (other.id === box.id || other.l >= left + width || other.r <= left)
+        continue;
       if (other.b <= box.t) top = Math.max(top, other.b);
       if (other.t >= box.b) top = Math.min(top, other.t - height);
     }
     return { ...box, l: left, t: top, r: left + width, b: top + height };
   }
 
-  function resizeBox(box, width, height, regionWidth, regionHeight, boxes, fromTopLeft = false) {
+  function resizeBox(
+    box,
+    width,
+    height,
+    regionWidth,
+    regionHeight,
+    boxes,
+    fromTopLeft = false,
+  ) {
     const w = Math.max(1, Math.round(width));
     const h = Math.max(1, Math.round(height));
     let left = fromTopLeft ? Math.max(0, box.r - w) : box.l;
@@ -267,7 +354,10 @@ const ScreenshotBoxes = (() => {
     const { data, width, height } = plate;
     let opaque = true;
     for (let i = 3; i < cutout.length; i += 4) {
-      if (cutout[i] !== 255) { opaque = false; break; }
+      if (cutout[i] !== 255) {
+        opaque = false;
+        break;
+      }
     }
 
     for (let y = t; y < b; y++) {
@@ -283,10 +373,20 @@ const ScreenshotBoxes = (() => {
         const right = (y * width + r) * 4;
         const above = ((t - 1) * width + x) * 4;
         const below = (b * width + x) * 4;
-        if (l > 0 && original[left + 3] === 255) { source = left; distance = x - l; }
-        if (r < width && r - 1 - x < distance && original[right + 3] === 255) { source = right; distance = r - 1 - x; }
-        if (t > 0 && y - t < distance && original[above + 3] === 255) { source = above; distance = y - t; }
-        if (b < height && b - 1 - y < distance && original[below + 3] === 255) source = below;
+        if (l > 0 && original[left + 3] === 255) {
+          source = left;
+          distance = x - l;
+        }
+        if (r < width && r - 1 - x < distance && original[right + 3] === 255) {
+          source = right;
+          distance = r - 1 - x;
+        }
+        if (t > 0 && y - t < distance && original[above + 3] === 255) {
+          source = above;
+          distance = y - t;
+        }
+        if (b < height && b - 1 - y < distance && original[below + 3] === 255)
+          source = below;
         if (source < 0) continue;
         data[target] = original[source];
         data[target + 1] = original[source + 1];
@@ -296,5 +396,16 @@ const ScreenshotBoxes = (() => {
     }
   }
 
-  return { splitBoxes, scaleBoxes, suggestPadding, byPosition, overlaps, mergeToLimit, roomForBox, moveBox, resizeBox, fillBox };
+  return {
+    splitBoxes,
+    scaleBoxes,
+    suggestPadding,
+    byPosition,
+    overlaps,
+    mergeToLimit,
+    roomForBox,
+    moveBox,
+    resizeBox,
+    fillBox,
+  };
 })();
